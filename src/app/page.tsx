@@ -59,26 +59,56 @@ export default function Home() {
     fetchProducts();
   }, []);
 
+  // Reset to page 1 when filtered products change
+  useEffect(() => {
+    // When filteredProducts changes due to search query or sorting
+    // ensure we reset to page 1 if current page would be out of bounds
+    const filteredProducts = filterProductsBySearch(allProducts, searchQuery);
+    const totalPages = Math.max(
+      1,
+      Math.ceil(filteredProducts.length / ITEMS_PER_PAGE)
+    );
+
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [searchQuery, allProducts, currentPage]);
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setCurrentPage(1);
+    setCurrentPage(1); // Always reset to page 1 on new search
   };
 
+  // Process products in the correct order: filter -> sort -> paginate
   const filteredProducts = filterProductsBySearch(allProducts, searchQuery);
   const sortedProducts = sortProducts(
     filteredProducts,
     sortOption.field,
     sortOption.order
   );
+
+  // Calculate total pages correctly
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedProducts.length / ITEMS_PER_PAGE)
+  );
+
+  // Ensure current page is valid
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  // Get paginated products for display
   const paginatedProducts = paginateProducts(
     sortedProducts,
-    currentPage,
+    validCurrentPage,
     ITEMS_PER_PAGE
   );
-  const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    // Ensure page is within valid range
+    const validPage = Math.min(Math.max(1, page), totalPages);
+    setCurrentPage(validPage);
+
+    // Scroll to top when changing pages
     window.scrollTo({
       top: 0,
       behavior: "smooth",
@@ -87,7 +117,7 @@ export default function Home() {
 
   const handleSortChange = (newSort: SortOption) => {
     setSortOption(newSort);
-    setCurrentPage(1);
+    setCurrentPage(1); // Reset to page 1 when sorting changes
   };
 
   return (
@@ -101,6 +131,7 @@ export default function Home() {
             <p className="text-gray-600">
               {filteredProducts.length}{" "}
               {filteredProducts.length === 1 ? "product" : "products"} found
+              {totalPages > 1 && ` • Page ${validCurrentPage} of ${totalPages}`}
             </p>
             <SortOptions
               currentSort={sortOption}
@@ -149,7 +180,7 @@ export default function Home() {
 
           {totalPages > 1 && (
             <Pagination
-              currentPage={currentPage}
+              currentPage={validCurrentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
             />

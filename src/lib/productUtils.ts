@@ -5,6 +5,10 @@ export const sortProducts = (
   field: SortField,
   order: SortOrder
 ): Product[] => {
+  if (!products || products.length === 0) {
+    return [];
+  }
+
   return [...products].sort((a, b) => {
     if (field === "title") {
       return order === "asc"
@@ -25,7 +29,20 @@ export const paginateProducts = (
   page: number,
   itemsPerPage: number
 ): Product[] => {
-  const startIndex = (page - 1) * itemsPerPage;
+  // Handle edge cases
+  if (!products || products.length === 0) {
+    return [];
+  }
+
+  // Ensure page is valid
+  const validPage = Math.max(1, page);
+  const startIndex = (validPage - 1) * itemsPerPage;
+
+  // Ensure we don't go beyond array bounds
+  if (startIndex >= products.length) {
+    return [];
+  }
+
   return products.slice(startIndex, startIndex + itemsPerPage);
 };
 
@@ -40,6 +57,10 @@ export const filterProductsBySearch = (
   products: Product[],
   searchQuery: string
 ): Product[] => {
+  if (!products || products.length === 0) {
+    return [];
+  }
+
   if (!searchQuery.trim()) {
     return products;
   }
