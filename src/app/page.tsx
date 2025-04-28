@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ProductCard from "@/components/ProductCard";
 import Pagination from "@/components/Pagination";
 import SortOptions from "@/components/SortOptions";
@@ -59,54 +59,51 @@ export default function Home() {
     fetchProducts();
   }, []);
 
-  // Reset to page 1 when filtered products change
+  // Reset to page 1 when search or sort criteria change
   useEffect(() => {
-    // When filteredProducts changes due to search query or sorting
-    // ensure we reset to page 1 if current page would be out of bounds
-    const filteredProducts = filterProductsBySearch(allProducts, searchQuery);
-    const totalPages = Math.max(
-      1,
-      Math.ceil(filteredProducts.length / ITEMS_PER_PAGE)
-    );
+    setCurrentPage(1);
+  }, [searchQuery, sortOption]);
 
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [searchQuery, allProducts, currentPage]);
+  // Memoized function to get processed products
+  const getProcessedProducts = useCallback(() => {
+    // Apply filters and sorting
+    const filtered = filterProductsBySearch(allProducts, searchQuery);
+    const sorted = sortProducts(filtered, sortOption.field, sortOption.order);
+
+    // Calculate total pages
+    const total = Math.max(1, Math.ceil(sorted.length / ITEMS_PER_PAGE));
+
+    // Ensure current page is valid
+    const validPage = Math.min(Math.max(1, currentPage), total);
+
+    // Get current page items
+    const paginatedItems = paginateProducts(sorted, validPage, ITEMS_PER_PAGE);
+
+    return {
+      filtered,
+      sorted,
+      paginatedItems,
+      totalPages: total,
+      validPage,
+    };
+  }, [allProducts, searchQuery, sortOption, currentPage]);
+
+  const {
+    filtered: filteredProducts,
+    sorted: sortedProducts,
+    paginatedItems: paginatedProducts,
+    totalPages,
+    validPage: validCurrentPage,
+  } = getProcessedProducts();
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setCurrentPage(1); // Always reset to page 1 on new search
   };
 
-  // Process products in the correct order: filter -> sort -> paginate
-  const filteredProducts = filterProductsBySearch(allProducts, searchQuery);
-  const sortedProducts = sortProducts(
-    filteredProducts,
-    sortOption.field,
-    sortOption.order
-  );
-
-  // Calculate total pages correctly
-  const totalPages = Math.max(
-    1,
-    Math.ceil(sortedProducts.length / ITEMS_PER_PAGE)
-  );
-
-  // Ensure current page is valid
-  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
-
-  // Get paginated products for display
-  const paginatedProducts = paginateProducts(
-    sortedProducts,
-    validCurrentPage,
-    ITEMS_PER_PAGE
-  );
-
   const handlePageChange = (page: number) => {
-    // Ensure page is within valid range
-    const validPage = Math.min(Math.max(1, page), totalPages);
-    setCurrentPage(validPage);
+    // Validate page number
+    const newPage = Math.min(Math.max(1, page), totalPages);
+    setCurrentPage(newPage);
 
     // Scroll to top when changing pages
     window.scrollTo({
@@ -117,7 +114,6 @@ export default function Home() {
 
   const handleSortChange = (newSort: SortOption) => {
     setSortOption(newSort);
-    setCurrentPage(1); // Reset to page 1 when sorting changes
   };
 
   return (
@@ -125,7 +121,7 @@ export default function Home() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">Product Catalog</h1>
         <div className="flex flex-col gap-4 mb-4">
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={handleSearch} initialQuery={searchQuery} />
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <p className="text-gray-600">
