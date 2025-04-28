@@ -10,7 +10,7 @@ export default function Header() {
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
             <ShoppingBag className="h-6 w-6" />
-            <span className="font-bold text-xl">ShopCatalog</span>
+            <span className="font-bold text-xl">Mtouch Labs ShopCatalog</span>
           </Link>
           <nav>
             <Link
