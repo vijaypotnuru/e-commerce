@@ -1,4 +1,4 @@
-import type { Product, SortField, SortOrder } from '@/types/product';
+import type { Product, SortField, SortOrder } from "@/types/product";
 
 export const sortProducts = (
   products: Product[],
@@ -6,14 +6,14 @@ export const sortProducts = (
   order: SortOrder
 ): Product[] => {
   return [...products].sort((a, b) => {
-    if (field === 'title') {
-      return order === 'asc'
+    if (field === "title") {
+      return order === "asc"
         ? a.title.localeCompare(b.title)
         : b.title.localeCompare(a.title);
     }
 
-    if (field === 'price') {
-      return order === 'asc' ? a.price - b.price : b.price - a.price;
+    if (field === "price") {
+      return order === "asc" ? a.price - b.price : b.price - a.price;
     }
 
     return 0;
@@ -30,8 +30,26 @@ export const paginateProducts = (
 };
 
 export const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(price);
+};
+
+export const filterProductsBySearch = (
+  products: Product[],
+  searchQuery: string
+): Product[] => {
+  if (!searchQuery.trim()) {
+    return products;
+  }
+
+  const query = searchQuery.toLowerCase().trim();
+
+  return products.filter(
+    (product) =>
+      product.title.toLowerCase().includes(query) ||
+      product.description.toLowerCase().includes(query) ||
+      product.category.toLowerCase().includes(query)
+  );
 };
